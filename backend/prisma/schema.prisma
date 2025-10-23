@@ -12,32 +12,42 @@ datasource db {
 
 enum Role {
   ADMIN
-  SECURITY_GUARD
+  SECURITY_OFFICER
+  ADMINISTRATIVE_STAFF
   STUDENT
 }
 
+enum VehicleType {
+  CAR
+  MOTORCYCLE
+}
+
 model User {
-  id        Int      @id @default(autoincrement())
-  email     String   @unique
-  password  String
-  name      String
-  role      Role
-  createdAt DateTime @default(now())
-  updatedAt DateTime @updatedAt
-  vehicles  Vehicle[]
+  id                   Int      @id @default(autoincrement())
+  email                String   @unique
+  password             String
+  name                 String
+  dateOfBirth          DateTime
+  identificationNumber String   @unique
+  role                 Role
+  isFirstLogin         Boolean  @default(true)
+  createdAt            DateTime @default(now())
+  updatedAt            DateTime @updatedAt
+  vehicles             Vehicle[]
 }
 
 model Vehicle {
-  id            Int             @id @default(autoincrement())
-  licensePlate  String          @unique
-  color         String
-  model         String
-  brand         String
-  ownerId       Int
-  owner         User            @relation(fields: [ownerId], references: [id])
-  createdAt     DateTime        @default(now())
-  updatedAt     DateTime        @updatedAt
-  parkingRecords ParkingRecord[]
+  id                    Int             @id @default(autoincrement())
+  licensePlate          String          @unique
+  brand                 String
+  color                 String
+  type                  VehicleType
+  requiresHandicapSpace Boolean         @default(false)
+  ownerId               Int
+  owner                 User            @relation(fields: [ownerId], references: [id])
+  createdAt             DateTime        @default(now())
+  updatedAt             DateTime        @updatedAt
+  parkingRecords        ParkingRecord[]
 }
 
 model ParkingSpace {
