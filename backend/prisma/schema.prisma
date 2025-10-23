@@ -1,0 +1,62 @@
+// This is your Prisma schema file,
+// learn more about it in the docs: https://pris.ly/d/prisma-schema
+
+generator client {
+  provider = "prisma-client-js"
+}
+
+datasource db {
+  provider = "sqlite"
+  url      = env("DATABASE_URL")
+}
+
+enum Role {
+  ADMIN
+  SECURITY_GUARD
+  STUDENT
+}
+
+model User {
+  id        Int      @id @default(autoincrement())
+  email     String   @unique
+  password  String
+  name      String
+  role      Role
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+  vehicles  Vehicle[]
+}
+
+model Vehicle {
+  id            Int             @id @default(autoincrement())
+  licensePlate  String          @unique
+  color         String
+  model         String
+  brand         String
+  ownerId       Int
+  owner         User            @relation(fields: [ownerId], references: [id])
+  createdAt     DateTime        @default(now())
+  updatedAt     DateTime        @updatedAt
+  parkingRecords ParkingRecord[]
+}
+
+model ParkingSpace {
+  id              Int             @id @default(autoincrement())
+  spaceNumber     String          @unique
+  isOccupied      Boolean         @default(false)
+  createdAt       DateTime        @default(now())
+  updatedAt       DateTime        @updatedAt
+  parkingRecords  ParkingRecord[]
+}
+
+model ParkingRecord {
+  id              Int           @id @default(autoincrement())
+  vehicleId       Int
+  vehicle         Vehicle       @relation(fields: [vehicleId], references: [id])
+  parkingSpaceId  Int
+  parkingSpace    ParkingSpace  @relation(fields: [parkingSpaceId], references: [id])
+  entryTime       DateTime      @default(now())
+  exitTime        DateTime?
+  createdAt       DateTime      @default(now())
+  updatedAt       DateTime      @updatedAt
+}
