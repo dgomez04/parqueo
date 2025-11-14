@@ -4,15 +4,30 @@ import { AuthRequest } from '../middleware/auth';
 
 export const getCurrentOccupation = async (req: AuthRequest, res: Response) => {
   try {
-    const totalSpaces = await prisma.parkingSpace.count();
+    // If security guard, filter by their session parking
+    const parkingFilter = req.parkingId ? { parkingId: req.parkingId } : {};
+
+    const totalSpaces = await prisma.parkingSpace.count({
+      where: parkingFilter,
+    });
     const occupiedSpaces = await prisma.parkingSpace.count({
-      where: { isOccupied: true },
+      where: {
+        isOccupied: true,
+        ...parkingFilter,
+      },
     });
     const availableSpaces = totalSpaces - occupiedSpaces;
     const occupationRate = totalSpaces > 0 ? (occupiedSpaces / totalSpaces) * 100 : 0;
 
     const activeRecords = await prisma.parkingRecord.findMany({
-      where: { exitTime: null },
+      where: {
+        exitTime: null,
+        ...(req.parkingId ? {
+          parkingSpace: {
+            parkingId: req.parkingId,
+          }
+        } : {}),
+      },
       include: {
         vehicle: true,
         parkingSpace: true,

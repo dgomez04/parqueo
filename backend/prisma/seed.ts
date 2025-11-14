@@ -79,32 +79,104 @@ async function main() {
 
   console.log('Created student user:', student.email);
 
-  // Create some parking spaces (20 regular + 2 handicap)
-  const spaces = [];
-  for (let i = 1; i <= 20; i++) {
+  // Create Parkings
+  const parkingPrincipal = await prisma.parking.upsert({
+    where: { name: 'Parqueo Principal' },
+    update: {},
+    create: {
+      name: 'Parqueo Principal',
+    },
+  });
+
+  console.log('Created parking:', parkingPrincipal.name);
+
+  const parkingAires = await prisma.parking.upsert({
+    where: { name: 'Parqueo Los Aires' },
+    update: {},
+    create: {
+      name: 'Parqueo Los Aires',
+    },
+  });
+
+  console.log('Created parking:', parkingAires.name);
+
+  // Create parking spaces for Parqueo Principal (15 regular + 1 handicap)
+  const spacesPrincipal = [];
+  for (let i = 1; i <= 15; i++) {
+    const spaceNumber = `A${i.toString().padStart(2, '0')}`;
     const space = await prisma.parkingSpace.upsert({
-      where: { spaceNumber: `A${i.toString().padStart(2, '0')}` },
+      where: {
+        parkingId_spaceNumber: {
+          parkingId: parkingPrincipal.id,
+          spaceNumber: spaceNumber,
+        }
+      },
       update: {},
       create: {
-        spaceNumber: `A${i.toString().padStart(2, '0')}`,
+        spaceNumber: spaceNumber,
+        parkingId: parkingPrincipal.id,
       },
     });
-    spaces.push(space);
+    spacesPrincipal.push(space);
   }
 
-  // Add handicap spaces
-  for (let i = 1; i <= 2; i++) {
+  // Add handicap space to Parqueo Principal
+  const handicapSpace1 = await prisma.parkingSpace.upsert({
+    where: {
+      parkingId_spaceNumber: {
+        parkingId: parkingPrincipal.id,
+        spaceNumber: 'H01',
+      }
+    },
+    update: {},
+    create: {
+      spaceNumber: 'H01',
+      spaceType: 'HANDICAP',
+      parkingId: parkingPrincipal.id,
+    },
+  });
+  spacesPrincipal.push(handicapSpace1);
+
+  console.log(`Created ${spacesPrincipal.length} parking spaces for ${parkingPrincipal.name} (15 regular + 1 handicap)`);
+
+  // Create parking spaces for Parqueo Los Aires (5 regular + 1 handicap)
+  const spacesAires = [];
+  for (let i = 1; i <= 5; i++) {
+    const spaceNumber = `B${i.toString().padStart(2, '0')}`;
     const space = await prisma.parkingSpace.upsert({
-      where: { spaceNumber: `H${i.toString().padStart(2, '0')}` },
+      where: {
+        parkingId_spaceNumber: {
+          parkingId: parkingAires.id,
+          spaceNumber: spaceNumber,
+        }
+      },
       update: {},
       create: {
-        spaceNumber: `H${i.toString().padStart(2, '0')}`,
+        spaceNumber: spaceNumber,
+        parkingId: parkingAires.id,
       },
     });
-    spaces.push(space);
+    spacesAires.push(space);
   }
 
-  console.log(`Created ${spaces.length} parking spaces (20 regular + 2 handicap)`);
+  // Add handicap space to Parqueo Los Aires
+  const handicapSpace2 = await prisma.parkingSpace.upsert({
+    where: {
+      parkingId_spaceNumber: {
+        parkingId: parkingAires.id,
+        spaceNumber: 'H02',
+      }
+    },
+    update: {},
+    create: {
+      spaceNumber: 'H02',
+      spaceType: 'HANDICAP',
+      parkingId: parkingAires.id,
+    },
+  });
+  spacesAires.push(handicapSpace2);
+
+  console.log(`Created ${spacesAires.length} parking spaces for ${parkingAires.name} (5 regular + 1 handicap)`);
 
   // Create a sample vehicle for the student
   const vehicle1 = await prisma.vehicle.upsert({

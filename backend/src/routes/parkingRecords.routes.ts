@@ -8,8 +8,10 @@ router.use(authenticateToken);
 
 router.get('/', parkingRecordsController.getAllParkingRecords);
 router.get('/active', parkingRecordsController.getActiveRecords);
+router.get('/failed-attempts', requireRole('ADMIN'), parkingRecordsController.getFailedAttempts);
 router.get('/:id', parkingRecordsController.getParkingRecordById);
 router.post('/entry', requireRole('ADMIN', 'SECURITY_OFFICER'), parkingRecordsController.createEntry);
+router.post('/quick-entry', requireRole('ADMIN', 'SECURITY_OFFICER'), parkingRecordsController.quickEntry);
 router.post('/:id/exit', requireRole('ADMIN', 'SECURITY_OFFICER'), parkingRecordsController.createExit);
 
 export default router;

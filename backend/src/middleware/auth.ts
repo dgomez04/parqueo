@@ -4,6 +4,8 @@ import jwt from 'jsonwebtoken';
 export interface AuthRequest extends Request {
   userId?: number;
   userRole?: string;
+  parkingId?: number;
+  sessionParkingId?: number;
 }
 
 export const authenticateToken = (req: AuthRequest, res: Response, next: NextFunction) => {
@@ -19,9 +21,11 @@ export const authenticateToken = (req: AuthRequest, res: Response, next: NextFun
       return res.status(403).json({ error: 'Invalid or expired token' });
     }
 
-    const payload = decoded as { userId: number; role: string };
+    const payload = decoded as { userId: number; role: string; parkingId?: number };
     req.userId = payload.userId;
     req.userRole = payload.role;
+    req.parkingId = payload.parkingId;
+    req.sessionParkingId = payload.parkingId; // Alias for convenience
     next();
   });
 };

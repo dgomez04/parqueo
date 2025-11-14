@@ -129,3 +129,27 @@ export const deleteVehicle = async (req: AuthRequest, res: Response) => {
     res.status(500).json({ error: 'Internal server error' });
   }
 };
+
+export const searchVehicleByLicensePlate = async (req: AuthRequest, res: Response) => {
+  try {
+    const { licensePlate } = req.query;
+
+    if (!licensePlate || typeof licensePlate !== 'string') {
+      return res.status(400).json({ error: 'License plate is required' });
+    }
+
+    const vehicle = await prisma.vehicle.findUnique({
+      where: { licensePlate: licensePlate.toUpperCase() },
+      include: { owner: { select: { id: true, name: true, email: true, role: true, dateOfBirth: true, identificationNumber: true } } },
+    });
+
+    if (!vehicle) {
+      return res.status(404).json({ error: 'Vehicle not found' });
+    }
+
+    res.json(vehicle);
+  } catch (error) {
+    console.error('Search vehicle error:', error);
+    res.status(500).json({ error: 'Internal server error' });
+  }
+};

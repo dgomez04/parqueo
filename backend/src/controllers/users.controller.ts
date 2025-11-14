@@ -181,12 +181,36 @@ export const changePassword = async (req: AuthRequest, res: Response) => {
       return res.status(401).json({ error: 'Current password is incorrect' });
     }
 
+    // Check if new password is the default password
+    if (newPassword === 'Ulacit123') {
+      return res.status(400).json({ error: 'Cannot use the default password. Please choose a different password.' });
+    }
+
+    // Check against password history
+    const passwordHistory = user.passwordHistory ? user.passwordHistory.split('|') : [];
+    for (const oldPasswordHash of passwordHistory) {
+      const isOldPassword = await bcrypt.compare(newPassword, oldPasswordHash);
+      if (isOldPassword) {
+        return res.status(400).json({ error: 'Cannot reuse a previous password. Please choose a different password.' });
+      }
+    }
+
+    // Also check against current password (shouldn't be the same as current)
+    const isSameAsCurrent = await bcrypt.compare(newPassword, user.password);
+    if (isSameAsCurrent) {
+      return res.status(400).json({ error: 'New password must be different from current password.' });
+    }
+
     const hashedPassword = await bcrypt.hash(newPassword, 10);
+
+    // Update password history (keep last 5 passwords)
+    const updatedHistory = [user.password, ...passwordHistory].slice(0, 5).join('|');
 
     await prisma.user.update({
       where: { id: userId },
       data: {
         password: hashedPassword,
+        passwordHistory: updatedHistory,
         isFirstLogin: false,
       },
     });

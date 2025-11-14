@@ -22,18 +22,31 @@ enum VehicleType {
   MOTORCYCLE
 }
 
+enum SpaceType {
+  CAR
+  MOTORCYCLE
+  HANDICAP
+}
+
+enum AttemptType {
+  ENTRY
+  EXIT
+}
+
 model User {
-  id                   Int      @id @default(autoincrement())
-  email                String   @unique
+  id                   Int             @id @default(autoincrement())
+  email                String          @unique
   password             String
+  passwordHistory      String          @default("")
   name                 String
   dateOfBirth          DateTime
-  identificationNumber String   @unique
+  identificationNumber String          @unique
   role                 Role
-  isFirstLogin         Boolean  @default(true)
-  createdAt            DateTime @default(now())
-  updatedAt            DateTime @updatedAt
+  isFirstLogin         Boolean         @default(true)
+  createdAt            DateTime        @default(now())
+  updatedAt            DateTime        @updatedAt
   vehicles             Vehicle[]
+  accessAttempts       AccessAttempt[]
 }
 
 model Vehicle {
@@ -43,20 +56,40 @@ model Vehicle {
   color                 String
   type                  VehicleType
   requiresHandicapSpace Boolean         @default(false)
-  ownerId               Int
-  owner                 User            @relation(fields: [ownerId], references: [id])
+  hasEnteredOnce        Boolean         @default(false)
+  ownerId               Int?
+  owner                 User?           @relation(fields: [ownerId], references: [id])
   createdAt             DateTime        @default(now())
   updatedAt             DateTime        @updatedAt
   parkingRecords        ParkingRecord[]
+  accessAttempts        AccessAttempt[]
+
+  @@index([licensePlate])
+}
+
+model Parking {
+  id             Int             @id @default(autoincrement())
+  name           String          @unique
+  createdAt      DateTime        @default(now())
+  updatedAt      DateTime        @updatedAt
+  parkingSpaces  ParkingSpace[]
+  accessAttempts AccessAttempt[]
 }
 
 model ParkingSpace {
   id              Int             @id @default(autoincrement())
-  spaceNumber     String          @unique
+  spaceNumber     String
+  spaceType       SpaceType       @default(CAR)
+  parkingId       Int
+  parking         Parking         @relation(fields: [parkingId], references: [id])
   isOccupied      Boolean         @default(false)
   createdAt       DateTime        @default(now())
   updatedAt       DateTime        @updatedAt
   parkingRecords  ParkingRecord[]
+
+  @@unique([parkingId, spaceNumber])
+  @@index([parkingId])
+  @@index([spaceType, isOccupied])
 }
 
 model ParkingRecord {
@@ -69,4 +102,26 @@ model ParkingRecord {
   exitTime        DateTime?
   createdAt       DateTime      @default(now())
   updatedAt       DateTime      @updatedAt
+}
+
+model AccessAttempt {
+  id                Int          @id @default(autoincrement())
+  licensePlate      String
+  vehicleId         Int?
+  vehicle           Vehicle?     @relation(fields: [vehicleId], references: [id])
+  parkingId         Int?
+  parking           Parking?     @relation(fields: [parkingId], references: [id])
+  attemptTime       DateTime     @default(now())
+  attemptType       AttemptType
+  success           Boolean
+  failureReason     String?
+  securityOfficerId Int?
+  securityOfficer   User?        @relation(fields: [securityOfficerId], references: [id])
+  createdAt         DateTime     @default(now())
+
+  @@index([licensePlate])
+  @@index([vehicleId])
+  @@index([parkingId])
+  @@index([attemptTime])
+  @@index([success])
 }

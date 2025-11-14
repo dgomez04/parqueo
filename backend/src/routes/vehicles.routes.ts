@@ -6,6 +6,7 @@ const router = Router();
 
 router.use(authenticateToken);
 
+router.get('/search', vehiclesController.searchVehicleByLicensePlate);
 router.get('/', vehiclesController.getAllVehicles);
 router.get('/:id', vehiclesController.getVehicleById);
 router.post('/', requireRole('ADMIN'), vehiclesController.createVehicle);
