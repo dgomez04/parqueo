@@ -1,25 +1,70 @@
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { useAuth } from '../contexts/AuthContext';
+import type { Parking } from '../types';
+import apiClient from '../api/client';
 
 const Login: React.FC = () => {
   const [email, setEmail] = useState('');
   const [password, setPassword] = useState('');
+  const [parkingId, setParkingId] = useState('');
   const [error, setError] = useState('');
-  const { login } = useAuth();
+  const [parkings, setParkings] = useState<Parking[]>([]);
+  const [loadingParkings, setLoadingParkings] = useState(false);
+  const [userRole, setUserRole] = useState<string | null>(null);
+  const [isFirstLogin, setIsFirstLogin] = useState(false);
+  const { login, loginWithParking } = useAuth();
   const navigate = useNavigate();
+
+  // Preload parkings when component mounts (no authentication needed)
+  useEffect(() => {
+    const fetchParkings = async () => {
+      setLoadingParkings(true);
+      try {
+        const response = await apiClient.get('/parkings');
+        setParkings(response.data);
+      } catch (err) {
+        console.error('Error loading parkings:', err);
+      } finally {
+        setLoadingParkings(false);
+      }
+    };
+
+    fetchParkings();
+  }, []);
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
     setError('');
 
     try {
-      await login(email, password);
+      // First, validate credentials and check user role
+      const response = await apiClient.post('/auth/login', { email, password });
+      const { user } = response.data;
+
+      // If security officer and not first login, they must select a parking
+      if (user.role === 'SECURITY_OFFICER' && !user.isFirstLogin) {
+        if (!parkingId) {
+          setError('Por favor seleccione un estacionamiento');
+          setUserRole(user.role);
+          setIsFirstLogin(user.isFirstLogin);
+          return;
+        }
+        // Login with parking selection
+        await loginWithParking(email, password, parseInt(parkingId));
+      } else {
+        // Normal login for other roles or first-time security officers
+        await login(email, password);
+      }
+
       navigate('/');
     } catch (err: any) {
-      setError(err.response?.data?.error || 'Login failed');
+      setError(err.response?.data?.error || 'Error al iniciar sesión');
+      setUserRole(null);
     }
   };
+
+  const showParkingField = parkingId !== '' || (userRole === 'SECURITY_OFFICER' && !isFirstLogin);
 
   return (
     <div style={{ maxWidth: '400px', margin: '100px auto', padding: '20px' }}>
@@ -45,6 +90,39 @@ const Login: React.FC = () => {
             style={{ width: '100%', padding: '8px', fontSize: '14px' }}
           />
         </div>
+
+        {showParkingField && (
+          <div style={{ marginBottom: '15px' }}>
+            <label style={{ display: 'block', marginBottom: '5px' }}>
+              Estacionamiento de Trabajo:
+            </label>
+            {loadingParkings ? (
+              <p style={{ fontSize: '14px', color: '#666' }}>Cargando estacionamientos...</p>
+            ) : (
+              <select
+                value={parkingId}
+                onChange={(e) => setParkingId(e.target.value)}
+                required
+                style={{
+                  width: '100%',
+                  padding: '8px',
+                  fontSize: '14px',
+                  border: '1px solid #ccc',
+                  borderRadius: '4px'
+                }}
+              >
+                <option value="">Seleccione un estacionamiento</option>
+                {parkings.map((parking) => (
+                  <option key={parking.id} value={parking.id}>
+                    {parking.name}
+                    {parking.totalSpaces !== undefined && ` (${parking.availableSpaces || 0}/${parking.totalSpaces} disponibles)`}
+                  </option>
+                ))}
+              </select>
+            )}
+          </div>
+        )}
+
         {error && <p style={{ color: 'red', marginBottom: '10px' }}>{error}</p>}
         <button type="submit" style={{ width: '100%', padding: '10px', fontSize: '16px' }}>
           Iniciar Sesión

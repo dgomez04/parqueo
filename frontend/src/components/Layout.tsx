@@ -21,14 +21,24 @@ const Layout: React.FC<{ children: React.ReactNode }> = ({ children }) => {
             <h2 style={{ margin: 0 }}>Parqueo</h2>
             <Link to="/" style={{ color: 'white', textDecoration: 'none' }}>Panel de Control</Link>
             {user.role === 'ADMIN' && (
-              <Link to="/users" style={{ color: 'white', textDecoration: 'none' }}>Usuarios</Link>
+              <>
+                <Link to="/users" style={{ color: 'white', textDecoration: 'none' }}>Usuarios</Link>
+                <Link to="/vehicles" style={{ color: 'white', textDecoration: 'none' }}>Vehículos</Link>
+              </>
             )}
-            <Link to="/vehicles" style={{ color: 'white', textDecoration: 'none' }}>Vehículos</Link>
-            <Link to="/parking-spaces" style={{ color: 'white', textDecoration: 'none' }}>Espacios</Link>
-            <Link to="/parking-records" style={{ color: 'white', textDecoration: 'none' }}>Entrada/Salida</Link>
+            {user.role == 'SECURITY_OFFICER' && (
+              <Link to="/parking-records" style={{ color: 'white', textDecoration: 'none' }}>Entrada/Salida</Link>
+            )}
           </div>
           <div style={{ display: 'flex', gap: '15px', alignItems: 'center' }}>
-            <span>{user.name} ({user.role.replace(/_/g, ' ')})</span>
+            <div style={{ textAlign: 'right' }}>
+              <div>{user.name} ({user.role.replace(/_/g, ' ')})</div>
+              {user.role === 'SECURITY_OFFICER' && user.sessionParking && (
+                <div style={{ fontSize: '12px', opacity: 0.9 }}>
+                  📍 {user.sessionParking.name}
+                </div>
+              )}
+            </div>
             <button
               onClick={handleLogout}
               style={{ padding: '8px 15px', backgroundColor: 'white', color: '#1976d2', border: 'none', borderRadius: '4px', cursor: 'pointer' }}
